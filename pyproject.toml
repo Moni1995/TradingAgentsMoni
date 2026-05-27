@@ -32,11 +32,21 @@ dependencies = [
     "yfinance>=0.2.63",
 ]
 
+[project.optional-dependencies]
+gui = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "python-dotenv>=1.0.0",
+    "websockets>=13.0",
+]
+
 [project.scripts]
 tradingagents = "cli.main:app"
+tradingagents-gui = "gui.backend.app:run"
 
 [tool.setuptools.packages.find]
-include = ["tradingagents*", "cli*"]
+include = ["tradingagents*", "cli*", "gui*"]
 
 [tool.setuptools.package-data]
 cli = ["static/*"]
