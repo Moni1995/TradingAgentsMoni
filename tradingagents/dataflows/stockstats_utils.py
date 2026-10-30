@@ -34,6 +34,14 @@ def yf_retry(func, max_retries=3, base_delay=2.0):
 
 def _clean_dataframe(data: pd.DataFrame) -> pd.DataFrame:
     """Normalize a stock DataFrame for stockstats: parse dates, drop invalid rows, fill price gaps."""
+    # yfinance.reset_index() can produce either "Date" or a generic "index"
+    # column depending on whether the DatetimeIndex was named. Normalize both
+    # so cached CSVs written under either behavior remain readable.
+    if "Date" not in data.columns:
+        for alt in ("index", "Datetime", "date"):
+            if alt in data.columns:
+                data = data.rename(columns={alt: "Date"})
+                break
     data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
     data = data.dropna(subset=["Date"])
 
@@ -63,7 +71,9 @@ def load_ohlcv(symbol: str, curr_date: str) -> pd.DataFrame:
     today_date = pd.Timestamp.today()
     start_date = today_date - pd.DateOffset(years=5)
     start_str = start_date.strftime("%Y-%m-%d")
-    end_str = today_date.strftime("%Y-%m-%d")
+    # yfinance treats `end` as exclusive, so today's bar (if already
+    # published) is dropped unless we extend by a day. Use tomorrow.
+    end_str = (today_date + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
     os.makedirs(config["data_cache_dir"], exist_ok=True)
     data_file = os.path.join(
